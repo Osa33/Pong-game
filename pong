@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TABLE TENNIS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 0.3em;
+    color: #e8e0d0;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+  }
+
+  .scoreboard {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-bottom: 16px;
+  }
+
+  .score-block { text-align: center; }
+
+  .score-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: #666;
+    text-transform: uppercase;
+  }
+
+  .score-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    line-height: 1;
+    color: #e8e0d0;
+  }
+
+  .score-divider {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: #333;
+  }
+
+  #canvas {
+    display: block;
+    border: 1px solid #2a3a2a;
+    box-shadow: 0 0 60px rgba(80,160,80,0.08), 0 0 0 1px #1a2a1a;
+  }
+
+  #gameInfo {
+    margin-top: 14px;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: #444;
+    text-transform: uppercase;
+    display: flex;
+    gap: 16px;
+  }
+  #gameInfo span { color: #777; }
+
+  /* ── Overlay ── */
+  #overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(8,14,8,0.93);
+    z-index: 10;
+  }
+
+  #overlayTitle {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem;
+    letter-spacing: 0.2em;
+    color: #e8e0d0;
+    margin-bottom: 4px;
+  }
+
+  #overlaySubtitle {
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  /* ── Settings panel ── */
+  .settings {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 320px;
+    margin-bottom: 28px;
+  }
+
+  .setting-row { display: flex; flex-direction: column; gap: 8px; }
+
+  .setting-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    color: #777;
+    text-transform: uppercase;
+  }
+
+  .btn-group { display: flex; gap: 8px; }
+
+  .diff-btn {
+    flex: 1;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #555;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .diff-btn:hover { border-color: #777; color: #aaa; }
+  .diff-btn.active-easy   { border-color: #5db87a; color: #5db87a; background: rgba(93,184,122,0.07); }
+  .diff-btn.active-medium { border-color: #c8b87a; color: #c8b87a; background: rgba(200,184,122,0.07); }
+  .diff-btn.active-hard   { border-color: #e05c40; color: #e05c40; background: rgba(224,92,64,0.07); }
+
+  .points-row {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #2a2a2a;
+  }
+
+  .pts-btn {
+    background: transparent;
+    border: none;
+    color: #555;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+  }
+  .pts-btn:hover { color: #e8e0d0; background: #1a1a22; }
+
+  #ptsDisplay {
+    flex: 1;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.9rem;
+    color: #e8e0d0;
+    letter-spacing: 0.08em;
+    line-height: 48px;
+    border-left: 1px solid #2a2a2a;
+    border-right: 1px solid #2a2a2a;
+  }
+
+  #startBtn {
+    background: transparent;
+    border: 1px solid #e8e0d0;
+    color: #e8e0d0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 14px 48px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  #startBtn:hover { background: #e8e0d0; color: #0a0a0f; }
+
+  .wrapper { position: relative; }
+</style>
+</head>
+<body>
+
+<h1>Table Tennis</h1>
+
+<div class="scoreboard">
+  <div class="score-block">
+    <div class="score-label">You</div>
+    <div class="score-num" id="playerScore">0</div>
+  </div>
+  <div class="score-divider">:</div>
+  <div class="score-block">
+    <div class="score-label">CPU</div>
+    <div class="score-num" id="cpuScore">0</div>
+  </div>
+</div>
+
+<div class="wrapper">
+  <canvas id="canvas" width="700" height="480"></canvas>
+
+  <div id="overlay">
+    <div id="overlayTitle">TABLE TENNIS</div>
+    <div id="overlaySubtitle">Use arrow keys ↑ ↓ to move your paddle</div>
+
+    <div class="settings" id="settingsPanel">
+      <div class="setting-row">
+        <div class="setting-label">Difficulty</div>
+        <div class="btn-group">
+          <button class="diff-btn active-easy" data-diff="easy">Easy</button>
+          <button class="diff-btn" data-diff="medium">Medium</button>
+          <button class="diff-btn" data-diff="hard">Hard</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-label">Points to Win</div>
+        <div class="points-row">
+          <button class="pts-btn" id="ptsDown">−</button>
+          <div id="ptsDisplay">11</div>
+          <button class="pts-btn" id="ptsUp">+</button>
+        </div>
+      </div>
+    </div>
+
+    <button id="startBtn">Start Game</button>
+  </div>
+</div>
+
+<div id="gameInfo">
+  ↑ ↓ Arrow Keys &nbsp;·&nbsp; First to <span id="infoTarget">11</span> &nbsp;·&nbsp; <span id="infoDiff">Easy</span>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const PADDLE_W = 16;
+const BALL_R = 7;
+const PLAYER_X = 30;
+const PLAYER_SPEED = 6;
+
+// Per-difficulty: CPU speed, reaction accuracy, ball speed multiplier, paddle height
+const DIFFICULTY = {
+  easy:   { cpuSpeed: 1.9, reaction: 0.48, ballMult: 0.62, paddleH: 120, label: 'Easy'   },
+  medium: { cpuSpeed: 3.4, reaction: 0.78, ballMult: 0.88, paddleH:  88, label: 'Medium' },
+  hard:   { cpuSpeed: 5.4, reaction: 1.00, ballMult: 1.20, paddleH:  65, label: 'Hard'   }
+};
+
+const PTS_OPTIONS = [3, 5, 7, 11, 15, 21];
+let ptsIndex = PTS_OPTIONS.indexOf(11);
+let pointsToWin = 11;
+let selectedDiff = 'easy';
+
+// These get set on each reset() from difficulty config
+let PADDLE_H = 120;
+let CPU_X = W - 30 - PADDLE_W;
+
+let playerY, cpuY, ballX, ballY, ballVX, ballVY;
+let playerScore = 0, cpuScore = 0;
+let running = false;
+let keys = {};
+let trail = [];
+let awaitingSettings = true;
+
+// ── Difficulty buttons ──
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.diff-btn').forEach(b => b.className = 'diff-btn');
+    selectedDiff = btn.dataset.diff;
+    btn.classList.add('active-' + selectedDiff);
+  });
+});
+
+// ── Points spinner ──
+function updatePts() {
+  pointsToWin = PTS_OPTIONS[ptsIndex];
+  document.getElementById('ptsDisplay').textContent = pointsToWin;
+}
+document.getElementById('ptsDown').addEventListener('click', () => {
+  if (ptsIndex > 0) { ptsIndex--; updatePts(); }
+});
+document.getElementById('ptsUp').addEventListener('click', () => {
+  if (ptsIndex < PTS_OPTIONS.length - 1) { ptsIndex++; updatePts(); }
+});
+
+// ── Overlay helper ──
+function showOverlay(title, subtitle, btnText, withSettings) {
+  document.getElementById('overlayTitle').textContent = title;
+  document.getElementById('overlaySubtitle').textContent = subtitle;
+  document.getElementById('startBtn').textContent = btnText;
+  document.getElementById('settingsPanel').style.display = withSettings ? 'flex' : 'none';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+document.getElementById('startBtn').addEventListener('click', () => {
+  if (awaitingSettings) {
+    startGame();
+  } else {
+    awaitingSettings = true;
+    showOverlay('TABLE TENNIS', 'Use arrow keys ↑ ↓ to move your paddle', 'Start Game', true);
+  }
+});
+
+function startGame() {
+  playerScore = 0; cpuScore = 0;
+  document.getElementById('playerScore').textContent = '0';
+  document.getElementById('cpuScore').textContent = '0';
+  document.getElementById('infoTarget').textContent = pointsToWin;
+  document.getElementById('infoDiff').textContent = DIFFICULTY[selectedDiff].label;
+  document.getElementById('overlay').style.display = 'none';
+  awaitingSettings = false;
+  reset(Math.random() > 0.5 ? 1 : -1);
+  running = true;
+}
+
+function reset(serveDir = 1) {
+  const d = DIFFICULTY[selectedDiff];
+  PADDLE_H = d.paddleH;
+  CPU_X = W - 30 - PADDLE_W;
+  playerY = H / 2 - PADDLE_H / 2;
+  cpuY    = H / 2 - PADDLE_H / 2;
+  ballX = W / 2; ballY = H / 2;
+  const angle = Math.random() * 0.6 - 0.3;
+  const speed = (2.8 + Math.random() * 0.8) * d.ballMult;
+  ballVX = serveDir * speed;
+  ballVY = Math.sin(angle) * 2.5 * d.ballMult;
+  trail = [];
+}
+
+function endGame(winner) {
+  running = false;
+  awaitingSettings = false;
+  showOverlay(
+    winner === 'YOU' ? 'YOU WIN!' : 'CPU WINS',
+    `Score: ${playerScore} – ${cpuScore}  ·  ${DIFFICULTY[selectedDiff].label}  ·  First to ${pointsToWin}`,
+    'Play Again',
+    false
+  );
+}
+
+// ── Update ──
+function update() {
+  if (!running) return;
+  const d = DIFFICULTY[selectedDiff];
+
+  if (keys['ArrowUp'])   playerY -= PLAYER_SPEED;
+  if (keys['ArrowDown']) playerY += PLAYER_SPEED;
+  playerY = Math.max(0, Math.min(H - PADDLE_H, playerY));
+
+  // CPU AI
+  const cpuCenter = cpuY + PADDLE_H / 2;
+  const noise = (Math.random() - 0.5) * (1 - d.reaction) * 80;
+  const targetY = ballVX > 0 ? H / 2 + noise * 0.3 : ballY + noise;
+  cpuY += Math.min(Math.abs(targetY - cpuCenter), d.cpuSpeed) * Math.sign(targetY - cpuCenter);
+  cpuY = Math.max(0, Math.min(H - PADDLE_H, cpuY));
+
+  trail.push({ x: ballX, y: ballY });
+  if (trail.length > 10) trail.shift();
+
+  ballX += ballVX;
+  ballY += ballVY;
+
+  if (ballY - BALL_R <= 0)  { ballY = BALL_R;     ballVY =  Math.abs(ballVY); }
+  if (ballY + BALL_R >= H)  { ballY = H - BALL_R; ballVY = -Math.abs(ballVY); }
+
+  // Player paddle collision
+  if (ballX - BALL_R <= PLAYER_X + PADDLE_W && ballX - BALL_R >= PLAYER_X - 2 &&
+      ballY >= playerY && ballY <= playerY + PADDLE_H) {
+    ballX = PLAYER_X + PADDLE_W + BALL_R;
+    const hp = (ballY - playerY) / PADDLE_H - 0.5;
+    ballVX = Math.min(Math.abs(ballVX) * 1.06, 12);
+    ballVY = hp * 7;
+  }
+
+  // CPU paddle collision
+  if (ballX + BALL_R >= CPU_X && ballX + BALL_R <= CPU_X + PADDLE_W + 5 &&
+      ballY >= cpuY && ballY <= cpuY + PADDLE_H) {
+    ballX = CPU_X - BALL_R;
+    const hp = (ballY - cpuY) / PADDLE_H - 0.5;
+    ballVX = Math.max(-Math.abs(ballVX) * 1.06, -12);
+    ballVY = hp * 7;
+  }
+
+  if (ballX - BALL_R <= 0) {
+    cpuScore++;
+    document.getElementById('cpuScore').textContent = cpuScore;
+    if (cpuScore >= pointsToWin) { endGame('CPU'); return; }
+    reset(-1);
+  }
+  if (ballX + BALL_R >= W) {
+    playerScore++;
+    document.getElementById('playerScore').textContent = playerScore;
+    if (playerScore >= pointsToWin) { endGame('YOU'); return; }
+    reset(1);
+  }
+}
+
+// ── Draw ──
+function draw() {
+  // Green table surface
+  ctx.fillStyle = '#2d6a2d';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle darker green inner shadow / border
+  ctx.strokeStyle = '#1e4f1e';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(6, 6, W - 12, H - 12);
+
+  // White court lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(4, 4, W - 8, H - 8);
+
+  // Center dashed line
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Net — white with gaps
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillRect(W / 2 - 1, 0, 2, H);
+  ctx.fillStyle = '#2d6a2d';
+  for (let y = 0; y < H; y += 10) ctx.fillRect(W / 2 - 1, y + 5, 2, 5);
+  // Net posts
+  ctx.fillStyle = '#e0d8c0';
+  ctx.fillRect(W / 2 - 2, H - 12, 4, 12);
+  ctx.fillRect(W / 2 - 2, 0, 4, 12);
+
+  // Ball trail (white-ish)
+  trail.forEach((p, i) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, BALL_R * 0.65, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${(i / trail.length) * 0.2})`;
+    ctx.fill();
+  });
+
+  // Ball — white
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, BALL_R, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  // subtle shadow on ball for depth
+  ctx.beginPath();
+  ctx.arc(ballX + 1.5, ballY + 1.5, BALL_R * 0.55, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.fill();
+  // shine
+  ctx.beginPath();
+  ctx.arc(ballX - 2, ballY - 2, 2.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.fill();
+
+  // Paddles — beige
+  drawPaddle(PLAYER_X, playerY, true);
+  drawPaddle(CPU_X, cpuY, false);
+}
+
+function drawPaddle(x, y, isPlayer) {
+  const r = 6;
+  // Glow / drop shadow behind paddle
+  ctx.save();
+  ctx.shadowColor = isPlayer ? 'rgba(255, 200, 80, 0.7)' : 'rgba(100, 200, 255, 0.7)';
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + PADDLE_W - r, y);
+  ctx.quadraticCurveTo(x + PADDLE_W, y, x + PADDLE_W, y + r);
+  ctx.lineTo(x + PADDLE_W, y + PADDLE_H - r);
+  ctx.quadraticCurveTo(x + PADDLE_W, y + PADDLE_H, x + PADDLE_W - r, y + PADDLE_H);
+  ctx.lineTo(x + r, y + PADDLE_H);
+  ctx.quadraticCurveTo(x, y + PADDLE_H, x, y + PADDLE_H - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fillStyle = '#f0e4b0';
+  ctx.fill();
+  ctx.restore();
+
+  // Redraw without shadow for crisp fill + border
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + PADDLE_W - r, y);
+  ctx.quadraticCurveTo(x + PADDLE_W, y, x + PADDLE_W, y + r);
+  ctx.lineTo(x + PADDLE_W, y + PADDLE_H - r);
+  ctx.quadraticCurveTo(x + PADDLE_W, y + PADDLE_H, x + PADDLE_W - r, y + PADDLE_H);
+  ctx.lineTo(x + r, y + PADDLE_H);
+  ctx.quadraticCurveTo(x, y + PADDLE_H, x, y + PADDLE_H - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.fillStyle = '#f0e4b0';
+  ctx.fill();
+  // Thick dark border for contrast against green
+  ctx.strokeStyle = '#2a1f00';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  // Colored accent stripe on outer edge
+  ctx.fillStyle = isPlayer ? 'rgba(255,180,40,0.75)' : 'rgba(80,180,255,0.75)';
+  const stripeX = isPlayer ? x : x + PADDLE_W - 4;
+  ctx.fillRect(stripeX, y + r, 4, PADDLE_H - r * 2);
+  // Highlight sheen
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fillRect(x + 4, y + 6, PADDLE_W - 8, Math.floor(PADDLE_H * 0.35));
+}
+
+document.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if (['ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', e => keys[e.key] = false);
+
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+
+reset(1); draw(); loop();
+</script>
+</body>
+</html>
